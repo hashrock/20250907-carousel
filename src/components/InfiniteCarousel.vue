@@ -74,6 +74,10 @@ const isDragging = ref(false);
 const dragStartX = ref(0);
 const dragOffset = ref(0);
 const containerWidth = ref(0);
+// 速度計測用
+const velocityX = ref(0);
+const lastPointerX = ref(0);
+const lastPointerTime = ref(0);
 
 // 表示用の画像配列（前後にクローンを追加）
 const displayImages = computed(() => {
@@ -85,25 +89,69 @@ const displayImages = computed(() => {
 
 // トラックのスタイル
 const trackStyle = computed(() => {
-  const translateX = -(displayIndex.value * 100) + (dragOffset.value / containerWidth.value * 100);
+  const translateX = -(displayIndex.value * 100) + (dragOffset.value / (containerWidth.value || 1) * 100);
   return {
     transform: `translateX(${translateX}%)`,
-    transition: isTransitioning.value ? 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' : 'none'
+    transition: 'none' // トランジションを完全に無効化
   };
 });
 
 const next = () => {
   if (isDragging.value) return;
-  isTransitioning.value = true;
-  displayIndex.value++;
-  actualIndex.value = (actualIndex.value + 1) % props.images.length;
+  
+  // 現在の位置から次のスライドへ
+  const currentPosition = -displayIndex.value * containerWidth.value - dragOffset.value;
+  const nextSlide = Math.floor(-currentPosition / containerWidth.value) + 1;
+  const targetPosition = -nextSlide * containerWidth.value;
+  const targetOffset = targetPosition - (-displayIndex.value * containerWidth.value);
+  
+  const animate = () => {
+    const diff = targetOffset - dragOffset.value;
+    if (Math.abs(diff) > 1) {
+      dragOffset.value += diff * 0.15;
+      requestAnimationFrame(animate);
+    } else {
+      const slidesMoved = nextSlide - displayIndex.value;
+      displayIndex.value = nextSlide;
+      actualIndex.value = (actualIndex.value + slidesMoved + props.images.length) % props.images.length;
+      dragOffset.value = 0;
+      
+      // クローン位置の調整
+      if (displayIndex.value >= displayImages.value.length - 1) {
+        displayIndex.value = 1;
+      }
+    }
+  };
+  requestAnimationFrame(animate);
 };
 
 const prev = () => {
   if (isDragging.value) return;
-  isTransitioning.value = true;
-  displayIndex.value--;
-  actualIndex.value = (actualIndex.value - 1 + props.images.length) % props.images.length;
+  
+  // 現在の位置から前のスライドへ
+  const currentPosition = -displayIndex.value * containerWidth.value - dragOffset.value;
+  const prevSlide = Math.ceil(-currentPosition / containerWidth.value) - 1;
+  const targetPosition = -prevSlide * containerWidth.value;
+  const targetOffset = targetPosition - (-displayIndex.value * containerWidth.value);
+  
+  const animate = () => {
+    const diff = targetOffset - dragOffset.value;
+    if (Math.abs(diff) > 1) {
+      dragOffset.value += diff * 0.15;
+      requestAnimationFrame(animate);
+    } else {
+      const slidesMoved = prevSlide - displayIndex.value;
+      displayIndex.value = prevSlide;
+      actualIndex.value = (actualIndex.value + slidesMoved + props.images.length) % props.images.length;
+      dragOffset.value = 0;
+      
+      // クローン位置の調整
+      if (displayIndex.value <= 0) {
+        displayIndex.value = displayImages.value.length - 2;
+      }
+    }
+  };
+  requestAnimationFrame(animate);
 };
 
 const goToSlide = (index) => {
@@ -133,9 +181,11 @@ const handlePointerDown = (event) => {
   if (isTransitioning.value) return;
   
   isDragging.value = true;
-  dragStartX.value = event.clientX;
-  dragOffset.value = 0;
+  dragStartX.value = event.clientX - dragOffset.value; // 現在のオフセットを考慮
   containerWidth.value = event.currentTarget.offsetWidth;
+  velocityX.value = 0;
+  lastPointerX.value = event.clientX;
+  lastPointerTime.value = Date.now();
   
   event.currentTarget.setPointerCapture(event.pointerId);
 };
@@ -143,7 +193,26 @@ const handlePointerDown = (event) => {
 const handlePointerMove = (event) => {
   if (!isDragging.value) return;
   
+  const currentTime = Date.now();
+  const deltaTime = currentTime - lastPointerTime.value;
+  
+  // 速度を計算（movementXまたは差分から）
+  if (event.movementX !== undefined) {
+    // movementXが使える場合
+    if (deltaTime > 0) {
+      velocityX.value = event.movementX / deltaTime * 1000; // px/s
+    }
+  } else {
+    // movementXが使えない場合は差分から計算
+    const deltaX = event.clientX - lastPointerX.value;
+    if (deltaTime > 0) {
+      velocityX.value = deltaX / deltaTime * 1000; // px/s
+    }
+  }
+  
   dragOffset.value = event.clientX - dragStartX.value;
+  lastPointerX.value = event.clientX;
+  lastPointerTime.value = currentTime;
 };
 
 const handlePointerUp = (event) => {
@@ -151,26 +220,55 @@ const handlePointerUp = (event) => {
   
   isDragging.value = false;
   
-  const threshold = containerWidth.value * 0.2;
-  const shouldMove = Math.abs(dragOffset.value) > threshold;
+  // 摩擦係数とアニメーション設定
+  const friction = 0.95;
+  const minVelocity = 5;
   
-  // アニメーションを開始
-  isTransitioning.value = true;
-  
-  if (shouldMove) {
-    if (dragOffset.value < 0) {
-      // 左スワイプ（次へ）
-      displayIndex.value++;
-      actualIndex.value = (actualIndex.value + 1) % props.images.length;
-    } else {
-      // 右スワイプ（前へ）
-      displayIndex.value--;
-      actualIndex.value = (actualIndex.value - 1 + props.images.length) % props.images.length;
+  // 慣性アニメーションを開始
+  const animateInertia = () => {
+    if (Math.abs(velocityX.value) < minVelocity) {
+      // 速度が十分小さくなったら停止（スナップなし）
+      velocityX.value = 0;
+      
+      // クローン位置の調整のみ（インデックス更新なし）
+      if (displayIndex.value >= displayImages.value.length - 1) {
+        displayIndex.value = 1;
+        // dragOffsetは維持
+      } else if (displayIndex.value <= 0) {
+        displayIndex.value = displayImages.value.length - 2;
+        // dragOffsetは維持
+      }
+      
+      return;
     }
-  }
+    
+    // 慣性による移動
+    dragOffset.value += velocityX.value * 0.016;
+    velocityX.value *= friction;
+    
+    // 画像境界を超えたらインデックスを更新
+    if (Math.abs(dragOffset.value) >= containerWidth.value) {
+      const slidesMoved = Math.floor(Math.abs(dragOffset.value) / containerWidth.value);
+      const direction = Math.sign(dragOffset.value);
+      
+      displayIndex.value -= direction * slidesMoved;
+      actualIndex.value = (actualIndex.value - direction * slidesMoved + props.images.length) % props.images.length;
+      dragOffset.value = dragOffset.value % containerWidth.value;
+      
+      // クローン位置の調整
+      if (displayIndex.value >= displayImages.value.length - 1) {
+        displayIndex.value = 1;
+        // dragOffsetは維持
+      } else if (displayIndex.value <= 0) {
+        displayIndex.value = displayImages.value.length - 2;
+        // dragOffsetは維持
+      }
+    }
+    
+    requestAnimationFrame(animateInertia);
+  };
   
-  // オフセットをリセット（アニメーション付きで元に戻る）
-  dragOffset.value = 0;
+  animateInertia();
   
   if (event.currentTarget && event.currentTarget.releasePointerCapture) {
     event.currentTarget.releasePointerCapture(event.pointerId);
