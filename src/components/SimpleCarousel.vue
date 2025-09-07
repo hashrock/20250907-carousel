@@ -20,6 +20,7 @@
           :src="image.url"
           :alt="image.alt"
           class="carousel-image"
+          draggable="false"
         />
       </div>
     </div>
