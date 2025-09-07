@@ -1,10 +1,10 @@
 <template>
   <div class="carousel">
     <div class="carousel-container">
-      <div 
+      <div
         class="carousel-track"
         :style="{
-          transform: `translateX(-${currentIndex * 100}%)`
+          transform: `translateX(-${currentIndex * 100}%)`,
         }"
       >
         <img
@@ -54,9 +54,9 @@ const props = defineProps({
     type: Array,
     required: true,
     validator: (value) => {
-      return value.every(img => img.url && img.alt);
-    }
-  }
+      return value.every((img) => img.url && img.alt);
+    },
+  },
 });
 
 const currentIndex = ref(0);
@@ -158,6 +158,16 @@ const goToSlide = (index) => {
   cursor: pointer;
   transition: all 0.3s ease;
   padding: 0;
+  position: relative;
+}
+
+.indicator::before {
+  content: "";
+  position: absolute;
+  inset: -8px -4px;
+  /* background-color: rgba(255, 0, 0, 0.5); */
+  cursor: pointer;
+  border-radius: 50%;
 }
 
 .indicator:hover {
