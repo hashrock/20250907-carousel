@@ -34,13 +34,12 @@
     </button>
 
     <div class="carousel-indicators">
-      <button
+      <CarouselIndicator
         v-for="(_, index) in props.images"
         :key="index"
-        class="indicator"
-        :class="{ active: currentIndex === index }"
-        @click="goToSlide(index)"
+        :is-active="currentIndex === index"
         :aria-label="`Go to slide ${index + 1}`"
+        @click="goToSlide(index)"
       />
     </div>
   </div>
@@ -48,6 +47,7 @@
 
 <script setup>
 import { ref, computed } from "vue";
+import CarouselIndicator from "./CarouselIndicator.vue";
 
 const props = defineProps({
   images: {
@@ -149,34 +149,4 @@ const goToSlide = (index) => {
   margin-top: 16px;
 }
 
-.indicator {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  border: none;
-  background: #ccc;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  padding: 0;
-  position: relative;
-}
-
-.indicator::before {
-  content: "";
-  position: absolute;
-  inset: -8px -4px;
-  /* background-color: rgba(255, 0, 0, 0.5); */
-  cursor: pointer;
-  border-radius: 50%;
-}
-
-.indicator:hover {
-  background: #999;
-}
-
-.indicator.active {
-  background: #333;
-  width: 24px;
-  border-radius: 4px;
-}
 </style>
