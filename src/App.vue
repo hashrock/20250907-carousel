@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import SimpleCarousel from "./components/SimpleCarousel.vue";
+import InfiniteCarousel from "./components/InfiniteCarousel.vue";
 
 const carouselImages = [
   {
@@ -27,7 +27,7 @@ const carouselImages = [
 
 <template>
   <div id="app">
-    <SimpleCarousel :images="carouselImages" />
+    <InfiniteCarousel :images="carouselImages" />
   </div>
 </template>
 

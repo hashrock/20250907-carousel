@@ -98,6 +98,7 @@ const {
   onPrev: prev,
   threshold: 0.2
 });
+
 </script>
 
 <style scoped>
