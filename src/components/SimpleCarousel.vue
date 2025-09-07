@@ -19,7 +19,7 @@
     <button
       class="carousel-button next"
       @click="next"
-      :disabled="currentIndex === images.length - 1"
+      :disabled="currentIndex === props.images.length - 1"
     >
       →
     </button>
@@ -29,35 +29,22 @@
 <script setup>
 import { ref, computed } from "vue";
 
+const props = defineProps({
+  images: {
+    type: Array,
+    required: true,
+    validator: (value) => {
+      return value.every(img => img.url && img.alt);
+    }
+  }
+});
+
 const currentIndex = ref(0);
 
-const images = [
-  {
-    url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1600&h=900&fit=crop",
-    alt: "Mountain landscape",
-  },
-  {
-    url: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1600&h=900&fit=crop",
-    alt: "Foggy mountains",
-  },
-  {
-    url: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1600&h=900&fit=crop",
-    alt: "Nature scene",
-  },
-  {
-    url: "https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=1600&h=900&fit=crop",
-    alt: "Forest path",
-  },
-  {
-    url: "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=1600&h=900&fit=crop",
-    alt: "Forest bridge",
-  },
-];
-
-const currentImage = computed(() => images[currentIndex.value]);
+const currentImage = computed(() => props.images[currentIndex.value]);
 
 const next = () => {
-  if (currentIndex.value < images.length - 1) {
+  if (currentIndex.value < props.images.length - 1) {
     currentIndex.value++;
   }
 };
@@ -104,6 +91,9 @@ const prev = () => {
   cursor: pointer;
   border-radius: 4px;
   transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .carousel-button:hover:not(:disabled) {
