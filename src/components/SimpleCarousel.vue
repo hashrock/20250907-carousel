@@ -1,11 +1,20 @@
 <template>
   <div class="carousel">
     <div class="carousel-container">
-      <img
-        :src="currentImage.url"
-        :alt="currentImage.alt"
-        class="carousel-image"
-      />
+      <div 
+        class="carousel-track"
+        :style="{
+          transform: `translateX(-${currentIndex * 100}%)`
+        }"
+      >
+        <img
+          v-for="(image, index) in props.images"
+          :key="index"
+          :src="image.url"
+          :alt="image.alt"
+          class="carousel-image"
+        />
+      </div>
     </div>
 
     <button
@@ -41,8 +50,6 @@ const props = defineProps({
 
 const currentIndex = ref(0);
 
-const currentImage = computed(() => props.images[currentIndex.value]);
-
 const next = () => {
   if (currentIndex.value < props.images.length - 1) {
     currentIndex.value++;
@@ -72,10 +79,17 @@ const prev = () => {
   overflow: hidden;
 }
 
+.carousel-track {
+  display: flex;
+  height: 100%;
+  transition: transform 0.5s ease-in-out;
+}
+
 .carousel-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  flex-shrink: 0;
 }
 
 .carousel-button {
