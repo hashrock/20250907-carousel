@@ -50,7 +50,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import CarouselIndicator from "./CarouselIndicator.vue";
 
 const props = defineProps({
@@ -221,7 +221,7 @@ const handlePointerUp = (event) => {
   isDragging.value = false;
   
   // 摩擦係数とアニメーション設定
-  const friction = 0.95;
+  const friction = 0.98;
   const minVelocity = 5;
   
   // 慣性アニメーションを開始
@@ -274,6 +274,50 @@ const handlePointerUp = (event) => {
     event.currentTarget.releasePointerCapture(event.pointerId);
   }
 };
+
+// クリック音を再生する関数
+const playClickSound = () => {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  const audioContext = new AudioContextClass();
+  
+  // ホワイトノイズバッファを作成
+  const bufferSize = audioContext.sampleRate * 0.01; // 10ms
+  const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+  const channelData = buffer.getChannelData(0);
+  
+  // ホワイトノイズを生成
+  for (let i = 0; i < bufferSize; i++) {
+    channelData[i] = Math.random() * 2 - 1;
+  }
+  
+  // バッファソースとゲインノードを作成
+  const source = audioContext.createBufferSource();
+  const gainNode = audioContext.createGain();
+  const filter = audioContext.createBiquadFilter();
+  
+  source.buffer = buffer;
+  source.connect(filter);
+  filter.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+  
+  // ハイパスフィルターでクリック感を強調
+  filter.type = 'highpass';
+  filter.frequency.value = 3000;
+  
+  // 超短いエンベロープ
+  gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.003);
+  
+  source.start(audioContext.currentTime);
+  source.stop(audioContext.currentTime + 0.01);
+};
+
+// actualIndexの変化を監視
+watch(actualIndex, (newValue, oldValue) => {
+  if (newValue !== oldValue) {
+    playClickSound();
+  }
+});
 
 onMounted(() => {
   // 初期位置を設定（最初の実画像を表示）
