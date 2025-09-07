@@ -32,6 +32,17 @@
     >
       →
     </button>
+
+    <div class="carousel-indicators">
+      <button
+        v-for="(_, index) in props.images"
+        :key="index"
+        class="indicator"
+        :class="{ active: currentIndex === index }"
+        @click="goToSlide(index)"
+        :aria-label="`Go to slide ${index + 1}`"
+      />
+    </div>
   </div>
 </template>
 
@@ -60,6 +71,10 @@ const prev = () => {
   if (currentIndex.value > 0) {
     currentIndex.value--;
   }
+};
+
+const goToSlide = (index) => {
+  currentIndex.value = index;
 };
 </script>
 
@@ -125,5 +140,33 @@ const prev = () => {
 
 .carousel-button.next {
   right: 10px;
+}
+
+.carousel-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  background: #ccc;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+}
+
+.indicator:hover {
+  background: #999;
+}
+
+.indicator.active {
+  background: #333;
+  width: 24px;
+  border-radius: 4px;
 }
 </style>
