@@ -38,6 +38,7 @@ jobs:
           npm run build:old
           mkdir -p dist/old
           cp -r dist-old/* dist/old/
+          mv dist/old/index-old.html dist/old/index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
