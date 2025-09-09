@@ -30,8 +30,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
+      - name: Build main
         run: npm run build
+
+      - name: Build src-old version
+        run: |
+          npm run build:old
+          mkdir -p dist/old
+          cp -r dist-old/* dist/old/
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

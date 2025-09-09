@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:old": "vite --config vite.config.old.ts serve index-old.html",
     "build": "vue-tsc -b && vite build",
+    "build:old": "vite build --config vite.config.old.ts",
     "preview": "vite preview"
   },
   "dependencies": {
